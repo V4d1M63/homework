@@ -2,16 +2,16 @@
 Задание 1
 Установите Prometheus.
 
-![Безымянный](https://user-images.githubusercontent.com/130470784/234813302-e4686b31-da02-412e-9895-5747a82b9252.png)
+![Безымянный](https://user-images.githubusercontent.com/130470784/234814891-af35c078-fe86-4101-b162-01b8e3ac2118.png)
 
 Задание 2
 Установите Node Exporter.
 
-![1](https://user-images.githubusercontent.com/130470784/234813526-e1451a16-82a9-4fc6-a04d-e23a5c30c3f5.png)
+![1](https://user-images.githubusercontent.com/130470784/234814936-6b71318d-12d8-4f9d-adaa-334263c91f35.png)
 
 Задание 3
 Подключите Node Exporter к серверу Prometheus.
 
-![2](https://user-images.githubusercontent.com/130470784/234813772-7bd4b4f5-1fdd-4398-8039-ea2fee831dc9.png)
-![3](https://user-images.githubusercontent.com/130470784/234813839-2dac22a0-44b6-4137-94cd-e9227339189a.png)
+![2](https://user-images.githubusercontent.com/130470784/234814971-75905bfa-0926-430a-b207-f7255c853942.png)
+![3](https://user-images.githubusercontent.com/130470784/234815001-66fbba89-8231-411d-a35c-545c8e269a1c.png)
 
