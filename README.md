@@ -1,9 +1,17 @@
-# Домашнее задание к занятию "9.1. «Обзор систем IT-мониторинга»" - Вдовин Вадим
+# Домашнее задание к занятию «Система мониторинга Prometheus» - Вдовин Вадим
 Задание 1
-Создайте виртуальную машину в Yandex Cloud Compute Cloud и с помощью Yandex Monitoring создайте дашборд, на котором будет видно загрузку процессора.
+Установите Prometheus.
 
-Процесс выполнения:
+![Безымянный](https://user-images.githubusercontent.com/130470784/234813302-e4686b31-da02-412e-9895-5747a82b9252.png)
 
-![image](https://user-images.githubusercontent.com/130470784/231175138-16594d74-3db6-41e5-a22a-d837951a2b5c.png)
+Задание 2
+Установите Node Exporter.
 
-![image](https://user-images.githubusercontent.com/130470784/231176684-93cc591a-4c81-4c09-a670-3b9ce74814f0.png)
+![1](https://user-images.githubusercontent.com/130470784/234813526-e1451a16-82a9-4fc6-a04d-e23a5c30c3f5.png)
+
+Задание 3
+Подключите Node Exporter к серверу Prometheus.
+
+![2](https://user-images.githubusercontent.com/130470784/234813772-7bd4b4f5-1fdd-4398-8039-ea2fee831dc9.png)
+![3](https://user-images.githubusercontent.com/130470784/234813839-2dac22a0-44b6-4137-94cd-e9227339189a.png)
+
