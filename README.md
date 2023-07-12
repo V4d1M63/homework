@@ -13,6 +13,7 @@
 
 - какие данные хранятся в этих таблицах;
 - какой тип данных у столбцов в этих таблицах, если данные хранятся в PostgreSQL.
+
 Ответ:
 1. Фамилия Имя Отчество. - Строковый.
 2. Оклад сотрудника. - Цифровой.
@@ -32,45 +33,60 @@
 - ...
 - идентификатор структурного подразделения, внешний ключ, integer).
 
-Ответ:
-1. Сотрудники:
-- индетификатор (id) - int, первичный ключ, not null.
-- id_name - int.
-- подразделение - int, внешний ключ.
-- id_проекта - int.
-- должность - int.
-- оклад - numeric.
-- дата найма - data::date.
+```
+- main_table (Основная таблица)
+- - id (auto incriment, int, primary)
+- - user_id (unsigned, int, not null)
+- - office_id (unsigned, int, not null)
+- - position_id (unsigned, int, not null)
+- - subdivision_id (unsigned, int, not null) 
+- - department_id (unsigned, int, not null)
+- - total_sum (float, not null)
+- - hire_date (date, not null)
+```
 
-2. Имя сотрудника:
-- id - int, primary key, not null.
-- name - varchar (50).
-- отчество - varchar (50).
-- Фамилия - varchar (50).
+```
+- user (Пользователь)
+- - id (auto incriment, int, primary)
+- - first_name (varchar(255), not null)
+- - middle_name (varchar(255), not null)
+- - last_name (varchar(255), not null)
+```
 
-3. Город:
-- id - int, primary key, not null.
-- name - varchar (80).
+```
+- office (Адрес филиала)
+- - id (auto incriment, int, primary)
+- - address (varchar(255), not null)
+```
 
-5. Street:
-- id - int, primary key, not null.
-- name - varchar (150).
+```
+- position (Должность)
+- - id (auto incriment, int, primary)
+- - name (varchar(255), not null)
+```
 
-6. Подразделение:
-- id - int, primary key, not null.
-- name - varchar (100).
-- city - int.
-- street - int.
-- тип подразделения - int, внешний ключ.
+```
+- subdivision (Тип подразделения)
+- - id (auto incriment, int, primary)
+- - name (varchar(255), not null)
+```
 
-7. Должности:
-- id - int, primary key, not null.
-- name - varchar (150).
+```
+- department (Структурное подразделение)
+- - id (auto incriment, int, primary)
+- - name (varchar(255), not null)
+```
 
-8. Проект:
-- id - int, primary key, not null.
-- name - varchar (150).
+```
+- project (Проекты)
+- - id (auto incriment, int, primary)
+- - name (varchar(255), not null)
+```
 
-9. Тип подразделения:
-- id - int, primary key, not null.
-- name -varchar (150).
+```
+- project_user (Pivot таблица для соеденения пользователей и проектов)
+- - id (auto incriment, int, primary)
+- - project_id (varchar(255), not null)
+- - user_id (varchar(255), not null)
+```
+---
