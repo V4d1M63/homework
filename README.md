@@ -84,7 +84,7 @@
 ```
 
 ```
-- project_user (Pivot таблица для соеденения пользователей и проектов)
+- project_user (таблица для соеденения пользователей и проектов)
 - - id (auto incriment, int, primary)
 - - project_id (varchar(255), not null)
 - - user_id (varchar(255), not null)
