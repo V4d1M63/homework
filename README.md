@@ -33,60 +33,54 @@
 - ...
 - идентификатор структурного подразделения, внешний ключ, integer).
 
-```
-- main_table (Основная таблица)
-- - id (auto incriment, int, primary)
-- - user_id (unsigned, int, not null)
-- - office_id (unsigned, int, not null)
-- - position_id (unsigned, int, not null)
-- - subdivision_id (unsigned, int, not null) 
-- - department_id (unsigned, int, not null)
-- - total_sum (float, not null)
-- - hire_date (date, not null)
-```
+Ответ:
 
-```
-- user (Пользователь)
-- - id (auto incriment, int, primary)
-- - first_name (varchar(255), not null)
-- - middle_name (varchar(255), not null)
-- - last_name (varchar(255), not null)
-```
+1.Сотрудники:
 
-```
-- office (Адрес филиала)
-- - id (auto incriment, int, primary)
-- - address (varchar(255), not null)
-```
+- индетификатор (id) - int, первичный ключ, not null.
+- подразделение - int, внешний ключ.  
+- id_проекта - внешний ключ.  
+- должность - внешний ключ.  
+- оклад - numeric.
+- дата найма - data::date.
+- имя - varchar (50).  
+- отчество - varchar (50).  
+- Фамилия - varchar (50).  
 
-```
-- position (Должность)
-- - id (auto incriment, int, primary)
-- - name (varchar(255), not null)
-```
+2.Регион:
 
-```
-- subdivision (Тип подразделения)
-- - id (auto incriment, int, primary)
-- - name (varchar(255), not null)
-```
+- id - int, primary key, not null.
+- name - varchar (150)
 
-```
-- department (Структурное подразделение)
-- - id (auto incriment, int, primary)
-- - name (varchar(255), not null)
-```
+3.Город:
 
-```
-- project (Проекты)
-- - id (auto incriment, int, primary)
-- - name (varchar(255), not null)
-```
+- id - int, primary key, not null.
+- name - varchar (80).
+- регион - внешний ключ, integer
 
-```
-- project_user (таблица для соеденения пользователей и проектов)
-- - id (auto incriment, int, primary)
-- - project_id (varchar(255), not null)
-- - user_id (varchar(255), not null)
-```
----
+4.Адрес:
+
+ - первичный ключ, integer
+ - адрес varchar(250)
+ - город - внешний ключ, integer
+
+5.Подразделение:
+
+- id - int, primary key, not null.
+- name - varchar (100).
+- тип подразделения - int, внешний ключ.
+
+6.Должности:
+ 
+ - id - int, primary key, not null.
+ - name - varchar (150).
+
+7.Проект:
+
+ - id - int, primary key, not null.
+ - name - varchar (150).
+
+8.Тип подразделения:
+ -  id - int, primary key, not null.
+ -  name -varchar (150).
+  
