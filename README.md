@@ -1,85 +1,86 @@
-# Домашнее задание к занятию 12.2 "Работа с данными (DDL/DML) - Вдовин Вадим"
+# Домашнее задание к занятию "`12.3. «SQL. Часть 1»`" - `Вдовин Вадим`
 
 Задание можно выполнить как в любом IDE, так и в командной строке.
 
-# Задание 1.
+### Задание 1
 
-1.1 Поднимите чистый инстанс MySQL версии 8.0+. Можно использовать локальный сервер или контейнер Docker.
+Получите уникальные названия районов из таблицы с адресами, которые начинаются на “K” и заканчиваются на “a” и не содержат пробелов.
 
-1.2 Создайте учетную запись sys_temp.
+> #### Ответ: 
+> ```sql
+> select 
+>   distinct addr.district 
+> from 
+>   sakila.address addr 
+> where 
+>   addr.district like 'K%a' 
+>   and position(' ' in addr.district) = 0
+> 
+> ```  
+> <img width="783" alt="1" src="https://github.com/V4d1M63/homework/assets/130470784/71830fc7-937e-40b5-a0e0-3d1c4f797656">
 
-1.3 Выполните запрос на получение списка пользователей в Базе Данных. (скриншот)
+  
+### Задание 2
 
-1.4 Дайте все права для пользователя sys_temp.
+Получите из таблицы платежей за прокат фильмов информацию по платежам, которые выполнялись в промежуток с 15 июня 2005 года по 18 июня 2005 года **включительно** и стоимость которых превышает 10.00.
 
-1.5 Выполните запрос на получение списка прав для пользователя sys_temp. (скриншот)
-
-1.6 Переподключитесь к базе данных от имени sys_temp.
-
-Для смены типа аутентификации с sha2 используйте запрос:
-
-ALTER USER 'sys_test'@'localhost' IDENTIFIED WITH mysql_native_password BY 'password';
-
-1.6 По ссылке https://downloads.mysql.com/docs/sakila-db.zip скачайте дамп базы данных.
-
-1.7 Восстановите дамп в базу данных.
-
-1.8 При работе в IDE сформируйте ER-диаграмму получившейся базы данных. При работе в командной строке используйте команду для получения всех таблиц базы данных. (скриншот)
-
-Результатом работы должны быть скриншоты обозначенных заданий, а так же "простыня" со всеми запросами.
-___
-**Ответ:**
-
-Установил чистый инстанс MySQL версии 8.0+ и создав учетную запись sys_temp выполняю запрос на получение списка пользователей в Базе Данных. 
-
-**Cкриншот**
-
-![1](https://github.com/V4d1M63/homework/assets/130470784/5f30ebb4-d166-4119-b56e-075fdd641b95)
-
-
-Даю все права для пользователя sys_temp и запрос на получение списка прав для пользователя sys_temp. (скриншот)
-
-**Cкриншот**
-
-![2](https://github.com/V4d1M63/homework/assets/130470784/6fbf34bc-54a1-47e6-afd2-62f6b01bf52f)
+> #### Ответ: 
+> ```sql
+> select
+> 	*
+> from
+> 	sakila.payment pay
+> where
+> 	pay.payment_date between "2005-06-15 00:00:00" and "2005-06-18 23:59:59"
+> 	and pay.amount > 10
+> ```  
+> <img width="1047" alt="2" src="https://github.com/V4d1M63/homework/assets/130470784/03263c41-631f-4979-bd9c-8a60ac571992">
 
 
-использую запрос:
 
-ALTER USER 'sys_temp'@'localhost' IDENTIFIED WITH mysql_native_password BY 'password';
+### Задание 3
 
-**Cкриншот**
+Получите последние пять аренд фильмов.
 
-![3](https://github.com/V4d1M63/homework/assets/130470784/edd32bf3-bfaf-48e7-9c0b-40d54d9e4f96)
-
-
-По ссылке https://downloads.mysql.com/docs/sakila-db.zip скачал дамп базы данных и Восстановил дамп в базу данных.Sakila
-
-**Cкриншот**
-
-![4](https://github.com/V4d1M63/homework/assets/130470784/98ed7503-3399-4041-bb84-47ca461b4507)
-![5](https://github.com/V4d1M63/homework/assets/130470784/041a8441-4a75-4106-a70c-85d8d5af2ee2)
-
-
-сформирую ER-диаграмму получившейся базы данных и спользую команду для получения всех таблиц базы данных. (скриншот)
-
-**Cкриншот**
-
-![6](https://github.com/V4d1M63/homework/assets/130470784/e3aa7a58-ed06-4ecd-924b-cbc0f1656540)
-![7](https://github.com/V4d1M63/homework/assets/130470784/9f184580-627a-4f7c-ba59-bde916c81e17)
+> #### Ответ: 
+> ```sql
+> select
+> 	rent.*,
+> 	f.title
+> from
+> 	sakila.rental rent
+> join sakila.inventory i on
+> 	i.inventory_id = rent.inventory_id
+> join sakila.film f on
+> 	f.film_id = i.film_id
+> order by
+> 	rent.rental_date desc
+> limit 5
+> ```  
+> <img width="871" alt="3" src="https://github.com/V4d1M63/homework/assets/130470784/0ebbde20-7ae4-4169-b83f-4e6a3a1713a0">
 
 
-# Задание 2.
-Составьте таблицу, используя любой текстовый редактор или Excel, в которой должно быть два столбца, в первом должны быть названия таблиц восстановленной базы, во втором названия первичных ключей этих таблиц. Пример: (скриншот / текст)
+### Задание 4
 
-Название таблицы | Название первичного ключа
-customer         | customer_id
-___
+Одним запросом получите активных покупателей, имена которых Kelly или Willie. 
 
-**Ответ:**
+Сформируйте вывод в результат таким образом:
+- все буквы в фамилии и имени из верхнего регистра переведите в нижний регистр,
+- замените буквы 'll' в именах на 'pp'.
 
-Прикрепляю скриншот восстановленной базы : текстового редактора Exсel
-
-**Cкриншот**
-
-![8](https://github.com/V4d1M63/homework/assets/130470784/0fff2d12-49b0-48e3-82cd-8824189661cd)
+> #### Ответ: 
+> ```sql
+> select
+> 	c.customer_id,
+> 	REPLACE(lower(c.first_name), 'll', 'pp') as weird_first_name,
+> 	REPLACE(lower(c.last_name), 'll', 'pp') as weird_last_name,
+> 	c.active,
+> 	c.email,
+> 	c.create_date
+> from
+> 	sakila.customer c
+> where
+> 	lower(c.first_name) in ('kelly', 'willie')
+> 	and c.active
+> ```  
+> <img width="752" alt="4" src="https://github.com/V4d1M63/homework/assets/130470784/0036c74e-95ac-482d-aa70-8fd97ac4a1e7">
