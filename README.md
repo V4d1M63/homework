@@ -26,7 +26,7 @@
 ```sh
 virtualbox -h
 Oracle VM VirtualBox VM Selector v7.0.2
-Copyright (C) 2005-2022 Oracle and/or its affiliates
+Copyright (C) 2005-2023 Oracle and/or its affiliates
 ```
 - Vagrant
 ```sh
