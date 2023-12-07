@@ -1,123 +1,117 @@
-## Домашнее задание к занятию 7. «Введение в Terraform»
-![1](https://github.com/V4d1M63/homework/assets/130470784/5521b46b-d6e8-405a-80e9-8e922ea46b83)
+# Домашнее задание к занятию «Основы Terraform. Yandex Cloud»  
+## Студент: Вдовин Вадим
 
-### Задача 1
+------
 
-- Перейдите в каталог src. Скачайте все необходимые зависимости, использованные в проекте.
-- Изучите файл .gitignore. В каком terraform файле допустимо сохранить личную, секретную информацию?
-```
-personal.auto.tfvars - позволяет именовать файлы с переменными (в том числе секретными)
-```
-- Выполните код проекта. Найдите в State-файле секретное содержимое созданного ресурса random_password. Пришлите его в качестве ответа.
-```
-──(root㉿test)-[/home/…/.terraform.d]
-└─# terraform apply
+## Задание 1
 
-Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
-  + create
+1. Изучите проект. В файле variables.tf объявлены переменные для Yandex provider.
+2. Переименуйте файл personal.auto.tfvars_example в personal.auto.tfvars. Заполните переменные: идентификаторы облака, токен доступа. 
+Благодаря .gitignore этот файл не попадёт в публичный репозиторий. **Вы можете выбрать иной способ безопасно передать секретные данные в terraform.**
+3. Сгенерируйте или используйте свой текущий ssh-ключ. Запишите его открытую часть в переменную **vms_ssh_root_key**.
+4. Инициализируйте проект, выполните код. Исправьте намеренно допущенные синтаксические ошибки. Ищите внимательно, посимвольно. Ответьте, в чём заключается их суть.
+5. Ответьте, как в процессе обучения могут пригодиться параметры ```preemptible = true``` и ```core_fraction=5``` в параметрах ВМ. Ответ в документации Yandex Cloud.
 
-Terraform will perform the following actions:
+В качестве решения приложите:
 
-  # random_password.random_string will be created
-  + resource "random_password" "random_string" {
-      + bcrypt_hash = (sensitive value)
-      + id          = (known after apply)
-      + length      = 16
-      + lower       = true
-      + min_lower   = 1
-      + min_numeric = 1
-      + min_special = 0
-      + min_upper   = 1
-      + number      = true
-      + numeric     = true
-      + result      = (sensitive value)
-      + special     = false
-      + upper       = true
-    }
+- скриншот ЛК Yandex Cloud с созданной ВМ;
+- скриншот успешного подключения к консоли ВМ через ssh. К OS ubuntu необходимо подключаться под пользователем ubuntu: "ssh ubuntu@vm_ip_address";
+- ответы на вопросы.
 
-Plan: 1 to add, 0 to change, 0 to destroy.
+> ### Ответ:
+> При инициализации ошибки были в объявлении ресурса "yandex_compute_instance":   
+> - `platform_id = "standart-v4"` - должно быть `standard` а также есть всего v1-v3 версии. Для запуска укажем `standard-v1`  ([по доке](https://cloud.yandex.ru/docs/compute/concepts/vm-platforms))
+> - `cores         = 1` - минимальное количество ядер 2 ([по доке](https://cloud.yandex.ru/docs/compute/concepts/performance-levels)) 
+> 
+> Параметры `preemptible` и `core_fraction` помогут сэкономить предоставленный грант на использовании ресурсов:
+> - `preemptible = true` - прерываемая ВМ, т.е. работает не более 24 часов и может быть остановлена Compute Cloud в любой момент
+> - `core_fraction = 5` - уровень производительности vCPU (от 5% до 100%), т.е. доля вычислительного времени физических ядер, которую гарантирует vCPU. 
+> При уровне производительности 5% ВМ будет иметь доступ к физическим ядрам как минимум 5% времени — 50 миллисекунд в течение каждой секунды.
+> 
+> Ресурсы успешно созданы: 
+> ![1](https://github.com/V4d1M63/homework/assets/130470784/e6850505-b2ea-40df-b99e-76be0582eb49)
+> !![02](https://github.com/V4d1M63/homework/assets/130470784/64594e5f-f5c8-457f-b929-68e67546dfd1)
+> Добавил также в outputs.tf вывод external ip, чтобы не искать его:
+> ![03](https://github.com/V4d1M63/homework/assets/130470784/acd5ecfe-fd36-458f-aae2-aca92a5500f9)
+> Подключаемся по ssh:
+> ![04](https://github.com/V4d1M63/homework/assets/130470784/ba2cfec3-634a-472c-8214-1a56796934f3)
 
-Do you want to perform these actions?
-  Terraform will perform the actions described above.
-  Only 'yes' will be accepted to approve.
+------
 
-  Enter a value: yes
+## Задание 2
 
-random_password.random_string: Creating...
-random_password.random_string: Creation complete after 0s [id=none]
+1. Изучите файлы проекта.
+2. Замените все хардкод-**значения** для ресурсов **yandex_compute_image** и **yandex_compute_instance** на **отдельные** переменные. К названиям переменных ВМ добавьте в начало префикс **vm_web_** .  Пример: **vm_web_name**.
+3. Объявите нужные переменные в файле variables.tf, обязательно указывайте тип переменной. Заполните их **default** прежними значениями из main.tf. 
+4. Проверьте terraform plan. Изменений быть не должно. 
 
-Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
-```
+> #### Ответ:
+> Добавил необходимые переменные в variables.tf.  
+> В main.tf заменил хардкод-значения, получилось:  
+> ![05](https://github.com/V4d1M63/homework/assets/130470784/e2b2de38-6584-462a-835e-bb9e8eb5db7c)
+> `terraform plan` подтвердил, что изменений не обнаружено:  
+> ![06](https://github.com/V4d1M63/homework/assets/130470784/13942806-8e66-4a47-8126-5c0f8993761b)
+> 
 
-![3](https://github.com/V4d1M63/homework/assets/130470784/f685f681-59eb-4e41-a017-2e0cefa4d1ee)
+------
 
-- Раскомментируйте блок кода, примерно расположенный на строчках 29-42 файла main.tf. Выполните команду terraform -validate. Объясните в чем заключаются намеренно допущенные ошибки? Исправьте их.
-1. Error: Missing name for resource (Ошибка: Отсутствует имя для ресурса)
-```
-Error: Missing name for resource.
-│
-│   on main.tf line 24, in resource "docker_image":
-│   24: resource "docker_image" {
-│
-│ All resource blocks must have 2 labels (type, name).
-```
-Нужно добавить имя nginx
-```
-resource "docker_image" "nginx" {
-  name         = "nginx:latest"
-  keep_locally = true
-}
-```
-2. Неверное имя ресурса, а именно 1nginx. (Имя должно начинаться с буквы или подчеркивания и может содержать только буквы, цифры, подчеркивания и тире.)
-```
-Error: Invalid resource name
-│
-│   on main.tf line 28, in resource "docker_container" "1nginx":
-│   28: resource "docker_container" "1nginx" {
-│
-│ A name must start with a letter or underscore and may contain only letters, digits, underscores, and dashes.
-```
-Переименновали название имени nginx_1
-```
-resource "docker_container" "nginx_1" {
-  image = docker_image.nginx.image_id
-  name  = "example_${random_password.random_string.result}"
-  ports {
-    internal = 80
-    external = 8000
-  }
-}
-```
-- Выполните код. В качестве ответа приложите вывод команды docker ps
-```
-┌──(root㉿test)-[/home/…/.terraform.d]
-└─# docker ps
-CONTAINER ID   IMAGE          COMMAND                  CREATED         STATUS         PORTS                  NAMES
-39df73b6d219   904b8cb13b93   "/docker-entrypoint.…"   8 seconds ago   Up 7 seconds   0.0.0.0:8000->80/tcp   example_i2R7AkMrLCc7T9gf
-```
-- Замените имя docker-контейнера в блоке кода на hello_world, выполните команду terraform apply -auto-approve. Объясните своими словами, в чем может быть опасность применения ключа -auto-approve ?
-  
- terraform apply -auto-approve Пропускает интерактивное утверждение плана перед применением
-```
-└─# docker ps
-CONTAINER ID   IMAGE          COMMAND                  CREATED         STATUS         PORTS                  NAMES
-79030609a858   904b8cb13b93   "/docker-entrypoint.…"   4 seconds ago   Up 3 seconds   0.0.0.0:8000->80/tcp   hello_world
-```
-- Уничтожьте созданные ресурсы с помощью terraform. Убедитесь, что все ресурсы удалены. Приложите содержимое файла terraform.tfstate.
-```
-┌──(root㉿test)-[/home/…/.terraform.d]
-└─# cat terraform.tfstate
-{
-  "version": 4,
-  "terraform_version": "1.3.7",
-  "serial": 45,
-  "lineage": "daed9d12-bef8-1e97-1962-f63d257a60ea",
-  "outputs": {},
-  "resources": [],
-  "check_results": null
-}
-```
-- Объясните, почему при этом не был удален docker образ nginx:latest ?(Ответ найдите в коде проекта или документации)
-```
-Keep_locally - (Необязательно, логическое значение) Если true, то образ Docker не будет удален при операции уничтожения. Если это ложь, он удалит изображение из локального хранилища докера при операции уничтожения.
-```
+## Задание 3
+ 
+1. Создайте в корне проекта файл 'vms_platform.tf'. Перенесите в него все переменные первой ВМ.
+2. Скопируйте блок ресурса и создайте с его помощью вторую ВМ в файле main.tf: **"netology-develop-platform-db"** ,  cores  = 2, memory = 2, core_fraction = 20. Объявите её переменные с префиксом **vm_db_** в том же файле ('vms_platform.tf').
+3. Примените изменения.
+
+> #### Ответ:
+> Создал vms_platform.tf, перенес в него созданные переменные, а также продублировал с vm_db_ префиксом.  
+> В main.tf создал новый ресурс `yandex_compute_instance` "platform-db":
+> ![07](https://github.com/V4d1M63/homework/assets/130470784/d670a43c-298b-4bdf-a23f-d4630e785df2)
+> Результат `terraform apply`:
+> ![08](https://github.com/V4d1M63/homework/assets/130470784/fa5f475e-4d52-43a5-8591-b6f350e6d6bf)
+> ![09](https://github.com/V4d1M63/homework/assets/130470784/d66e0a81-48f2-49f7-ad90-44005375e763)
+
+------
+
+## Задание 4
+
+1. Объявите в файле outputs.tf output типа map, содержащий { instance_name = external_ip } для каждой из ВМ.
+2. Примените изменения.
+
+В качестве решения приложите вывод значений ip-адресов команды ```terraform output```.
+
+> #### Ответ:
+> Частично уже было выполнено, просто дополнил вызовом "name": 
+> ![10](https://github.com/V4d1M63/homework/assets/130470784/d5ac1bc2-2c3c-4031-83a5-454d19479b96)
+> ![11](https://github.com/V4d1M63/homework/assets/130470784/b4092a06-7cf5-4b9b-a1c6-4315c24554c1)
+
+------
+
+## Задание 5
+ 
+1. В файле locals.tf опишите в **одном** local-блоке имя каждой ВМ, используйте интерполяцию ${..} с несколькими переменными по примеру из лекции.
+2. Замените переменные с именами ВМ из файла variables.tf на созданные вами local-переменные.
+3. Примените изменения.
+
+> #### Ответ:
+> Описание в файле locals.tf:  
+>![12](https://github.com/V4d1M63/homework/assets/130470784/f8b8bfb1-391b-457e-a450-99afb7d877b8)
+> 
+> В main.tf теперь используем `local.web_name` и `local.db_name` в имени ВМ.  Terraform `apply` изменений не обнаружил:
+> ![13](https://github.com/V4d1M63/homework/assets/130470784/3a1232ef-7f46-42a3-97b7-43c338673d8d)
+
+------
+
+## Задание 6
+
+1. Вместо использования трёх переменных  ".._cores",".._memory",".._core_fraction" в блоке  resources {...}, объедините их в переменные типа **map** с именами "vm_web_resources" и "vm_db_resources". В качестве продвинутой практики попробуйте создать одну map-переменную **vms_resources** и уже внутри неё конфиги обеих ВМ — вложенный map.
+2. Также поступите с блоком **metadata {serial-port-enable, ssh-keys}**, эта переменная должна быть общая для всех ваших ВМ.
+3. Найдите и удалите все более не используемые переменные проекта.
+4. Проверьте terraform plan. Изменений быть не должно.
+
+> #### Ответ:
+> В vms_platform.tf добавил переменные для ресурсов и метаданных:
+> ![14](https://github.com/V4d1M63/homework/assets/130470784/9474f64d-bb8f-4a8f-a6de-890f8d114cc5)
+> Как выглядит использование переменных:  
+> ![15](https://github.com/V4d1M63/homework/assets/130470784/b73cc594-cc9b-4f6d-bfb9-eb7063fbc416)
+> В файлах vms_platform.tf и variables.tf закомментировал ненужные переменные.
+> `terraform plan` показал, что изменений нет:
+> ![16](https://github.com/V4d1M63/homework/assets/130470784/f871ac49-9671-4cca-93ec-f74aab02d9a9)
