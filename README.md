@@ -67,7 +67,7 @@
 > ![07](https://github.com/V4d1M63/homework/assets/130470784/d670a43c-298b-4bdf-a23f-d4630e785df2)
 > Результат `terraform apply`:
 > ![08](https://github.com/V4d1M63/homework/assets/130470784/fa5f475e-4d52-43a5-8591-b6f350e6d6bf)
-> ![09](https://github.com/V4d1M63/homework/assets/130470784/d66e0a81-48f2-49f7-ad90-44005375e763)
+> ![09](https://github.com/V4d1M63/homework/assets/130470784/e523f7f2-da74-4b73-936f-8cf5d3f8422c)
 
 ------
 
