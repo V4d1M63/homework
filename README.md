@@ -1,80 +1,234 @@
-## Домашнее задание к занятию "1. Типы и структура СУБД" - Вдовин Вадим
-
-## Задача 1
-
-### Архитектор ПО решил проконсультироваться у вас, какой тип БД лучше выбрать для хранения определенных данных.
-
-- Он вам предоставил следующие типы сущностей, которые нужно будет хранить в БД:
-
-1) Электронные чеки в json виде
-
-```
-Документо-ориентированые БД MongoDB, документы хранятся в JSON или BSON.
-```
-2) Склады и автомобильные дороги для логистической компании
-```
-Графовые БД, на подобие GraphDB, т.к. цель оптимизация пути от точки А до точки Б.
-```
-3) Генеалогические деревья
-```
-Генеалогические деревья - оптимальным выбором будут иерархические БД, например Caché.
-```
-4) Кэш идентификаторов клиентов с ограниченным временем жизни для движка аутенфикации
-```
-Кэш идентификаторов клиентов с ограниченным временем жизни для движка аутенфикации - БД вида ключ-значение, например Redis, он может использоваться как БД, и как кэш-система.
-```
-5) Отношения клиент-покупка для интернет-магазина
-- Выберите подходящие типы СУБД для каждой сущности и объясните свой выбор.
-```
-Реляционные БД, например, Postgres/MySQL, его табличное решение имеет
-возможность развития.
-```
-
-## Задача 2
-
-### Вы создали распределенное высоконагруженное приложение и хотите классифицировать его согласно CAP-теореме. Какой классификации по CAP-теореме соответствует ваша система, если (каждый пункт - это отдельная реализация вашей системы и для каждого пункта надо привести классификацию):
-
-- А согласно PACELC-теореме, как бы вы классифицировали данные реализации?
-  
-1) Данные записываются на все узлы с задержкой до часа (асинхронная запись)
-```
-АР; PA/EL.
-```
-2) При сетевых сбоях, система может разделиться на 2 раздельных кластера
-```
-СA; EL/PC.
-```
-3) Система может не прислать корректный ответ или сбросить соединение
-```
-CP; PA/EC.
-```
+## Домашнее задание к занятию 1 «Введение в Ansible»
 
 
-## Задача 3
-
-- Могут ли в одной системе сочетаться принципы BASE и ACID? Почему?
+1. Попробуйте запустить playbook на окружении из test.yml, зафиксируйте значение, которое имеет факт some_fact для указанного хоста при выполнении playbook.
 ```
-Принципы BASE и ACID в одной системе сочетаться не могут, т.к. эти принципы противоречат друг другу.
-- ACID говорит о том, что транзакции атомарны, согласованны, изолированны и стойки к низкоуровнемым проблемам, гарантируя надежность и предсказуемость работы системы.
-- BASE гарантирует только базовую доступность и только в конечном итоге даёт согласованность данных, позволяя создавать высокопроизводительные системы.
+──(root㉿kali)-[/home/kali/lesson/9-1-ansible/playbook]
+└─# ansible-playbook -i inventory/test.yml site.yml 
 
+PLAY [Print os facts] ***************************************************************************************************************
+
+TASK [Gathering Facts] **************************************************************************************************************
+ok: [localhost]
+
+TASK [Print OS] *********************************************************************************************************************
+ok: [localhost] => {
+    "msg": "Kali"
+}
+
+TASK [Print fact] *******************************************************************************************************************
+ok: [localhost] => {
+    "msg": 12
+}
+
+PLAY RECAP **************************************************************************************************************************
+localhost                  : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0  
+```
+2. Найдите файл с переменными (group_vars), в котором задаётся найденное в первом пункте значение, и поменяйте его на all default fact.
+```
+TASK [Print fact] *******************************************************************************************************
+ok: [localhost] => {
+    "msg": "all default fact"
+}
+```
+3. Воспользуйтесь подготовленным (используется docker) или создайте собственное окружение для проведения дальнейших испытаний.
+```
+docker run --name ubuntu -d eclipse/ubuntu_python sleep 20000000
+docker run --name centos7 -d centos:7 sleep 10000000 
+```
+4. Проведите запуск playbook на окружении из prod.yml. Зафиксируйте полученные значения some_fact для каждого из managed host.
+```
+┌──(root㉿kali)-[/home/kali/lesson/9-1-ansible/playbook]
+└─# ansible-playbook -i inventory/prod.yml site.yml                 
+
+PLAY [Print os facts] ***************************************************************************************************
+
+TASK [Gathering Facts] **************************************************************************************************
+[WARNING]: Unhandled error in Python interpreter discovery for host ubuntu: '<' not supported between instances of 'str'
+and 'int'
+[WARNING]: Platform linux on host ubuntu is using the discovered Python interpreter at /usr/local/bin/python3.5, but
+future installation of another Python interpreter could change the meaning of that path. See
+https://docs.ansible.com/ansible-core/2.14/reference_appendices/interpreter_discovery.html for more information.
+ok: [ubuntu]
+ok: [centos7]
+
+TASK [Print OS] *********************************************************************************************************
+ok: [centos7] => {
+    "msg": "CentOS"
+}
+ok: [ubuntu] => {
+    "msg": "Ubuntu"
+}
+
+TASK [Print fact] *******************************************************************************************************
+ok: [centos7] => {
+    "msg": "el"
+}
+ok: [ubuntu] => {
+    "msg": "deb"
+}
+
+PLAY RECAP **************************************************************************************************************
+centos7                    : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+ubuntu                     : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 ```
 
-## Задача 4 
+5. Добавьте факты в group_vars каждой из групп хостов так, чтобы для some_fact получились значения: для deb — deb default fact, для el — el default fact.
 
-### Вам дали задачу написать системное решение, основой которого бы послужили:
-
-- фиксация некоторых значений с временем жизни
-- реакция на истечение таймаута
-### Вы слышали о key-value хранилище, которое имеет механизм Pub/Sub. Что это за система? Какие минусы выбора данной системы?
-
+6. Повторите запуск playbook на окружении prod.yml. Убедитесь, что выдаются корректные значения для всех хостов.
 ```
-Я думаю что подойдёт Redis т.к. Redis это key-value хранилище, имеет механизм
-Pub/Sub и TTL с возможностью реакции на его истечение.
-Минусы: 
-- Отсутствует разграничение прав доступа по пользователям.
-- Отсутствует поддержка языка SQL
-- Высокие требования к оперативной памяти на сервере.
-- Консистентность данных - в случае отказа сервера, данные из оперативной памяти будут утеряны и сохранятся только данные с последней синхронизации с диском
-- Экземпляр БД не маштабируется
+┌──(root㉿kali)-[/home/kali/lesson/9-1-ansible/playbook]
+└─# ansible-playbook -i inventory/prod.yml site.yml 
+
+PLAY [Print os facts] ***************************************************************************************************
+
+TASK [Gathering Facts] **************************************************************************************************
+[WARNING]: Unhandled error in Python interpreter discovery for host ubuntu: '<' not supported between instances of 'str'
+and 'int'
+[WARNING]: Platform linux on host ubuntu is using the discovered Python interpreter at /usr/local/bin/python3.5, but
+future installation of another Python interpreter could change the meaning of that path. See
+https://docs.ansible.com/ansible-core/2.14/reference_appendices/interpreter_discovery.html for more information.
+ok: [ubuntu]
+ok: [centos7]
+
+TASK [Print OS] *********************************************************************************************************
+ok: [centos7] => {
+    "msg": "CentOS"
+}
+ok: [ubuntu] => {
+    "msg": "Ubuntu"
+}
+
+TASK [Print fact] *******************************************************************************************************
+ok: [ubuntu] => {
+    "msg": "deb default fact"
+}
+ok: [centos7] => {
+    "msg": "el default fact"
+}
+
+PLAY RECAP **************************************************************************************************************
+centos7                    : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+ubuntu                     : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0 
 ```
+7. При помощи ansible-vault зашифруйте факты в group_vars/deb и group_vars/el с паролем netology.
+```
+┌──(root㉿kali)-[/home/kali/lesson/9-1-ansible/playbook]
+└─# ansible-vault encrypt group_vars/deb/examp.yml  
+New Vault password: 
+Confirm New Vault password: 
+Encryption successful
+                                                                                                     
+┌──(root㉿kali)-[/home/kali/lesson/9-1-ansible/playbook]
+└─# ansible-vault encrypt group_vars/el/examp.yml
+New Vault password: 
+Confirm New Vault password: 
+Encryption successful
+```
+8. Запустите playbook на окружении prod.yml. При запуске ansible должен запросить у вас пароль. Убедитесь в работоспособности.
+```
+┌──(root㉿kali)-[/home/kali/lesson/9-1-ansible/playbook]
+└─# ansible-playbook -i inventory/prod.yml site.yml --ask-vault-pass
+Vault password: 
+
+PLAY [Print os facts] ***************************************************************************************************
+
+TASK [Gathering Facts] **************************************************************************************************
+[WARNING]: Unhandled error in Python interpreter discovery for host ubuntu: '<' not supported between instances of 'str'
+and 'int'
+[WARNING]: Platform linux on host ubuntu is using the discovered Python interpreter at /usr/local/bin/python3.5, but
+future installation of another Python interpreter could change the meaning of that path. See
+https://docs.ansible.com/ansible-core/2.14/reference_appendices/interpreter_discovery.html for more information.
+ok: [ubuntu]
+ok: [centos7]
+
+TASK [Print OS] *********************************************************************************************************
+ok: [centos7] => {
+    "msg": "CentOS"
+}
+ok: [ubuntu] => {
+    "msg": "Ubuntu"
+}
+
+TASK [Print fact] *******************************************************************************************************
+ok: [centos7] => {
+    "msg": "el default fact"
+}
+ok: [ubuntu] => {
+    "msg": "deb default fact"
+}
+
+PLAY RECAP **************************************************************************************************************
+centos7                    : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+ubuntu                     : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0 
+```
+9. Посмотрите при помощи ansible-doc список плагинов для подключения. Выберите подходящий для работы на control node.
+```
+└─# ansible-doc -t connection -l
+ansible.builtin.local          execute on controller
+```
+
+10. В prod.yml добавьте новую группу хостов с именем local, в ней разместите localhost с необходимым типом подключения.
+```
+---
+  el:
+    hosts:
+      centos7:
+        ansible_connection: docker
+  deb:
+    hosts:
+      ubuntu:
+        ansible_connection: docker
+  local:
+    hosts:
+      localhost:
+        ansible_connection: local
+```
+
+11. Запустите playbook на окружении prod.yml. При запуске ansible должен запросить у вас пароль. Убедитесь, что факты some_fact для каждого из хостов определены из верных group_vars.
+```
+┌──(root㉿kali)-[/home/kali/lesson/9-1-ansible/playbook]
+└─# ansible-playbook -i inventory/prod.yml site.yml --ask-vault-pass
+Vault password: 
+
+PLAY [Print os facts] ***************************************************************************************************
+
+TASK [Gathering Facts] **************************************************************************************************
+[WARNING]: Unhandled error in Python interpreter discovery for host ubuntu: '<' not supported between instances of 'str'
+and 'int'
+ok: [localhost]
+[WARNING]: Platform linux on host ubuntu is using the discovered Python interpreter at /usr/local/bin/python3.5, but
+future installation of another Python interpreter could change the meaning of that path. See
+https://docs.ansible.com/ansible-core/2.14/reference_appendices/interpreter_discovery.html for more information.
+ok: [ubuntu]
+ok: [centos7]
+
+TASK [Print OS] *********************************************************************************************************
+ok: [centos7] => {
+    "msg": "CentOS"
+}
+ok: [ubuntu] => {
+    "msg": "Ubuntu"
+}
+ok: [localhost] => {
+    "msg": "Kali"
+}
+
+TASK [Print fact] *******************************************************************************************************
+ok: [centos7] => {
+    "msg": "el default fact"
+}
+ok: [ubuntu] => {
+    "msg": "deb default fact"
+}
+ok: [localhost] => {
+    "msg": "all default fact"
+}
+
+PLAY RECAP **************************************************************************************************************
+centos7                    : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+localhost                  : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+ubuntu                     : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0 
+```
+
+12. Заполните README.md ответами на вопросы. Сделайте git push в ветку master. В ответе отправьте ссылку на ваш открытый репозиторий с изменённым playbook и заполненным README.md.
