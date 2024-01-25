@@ -1,27 +1,17 @@
-## Домашнее задание к занятию 2 «Работа с Playbook» - Вдовин Вадим
+# Домашнее задание к занятию "3. Использование Yandex Cloud" - Вдовин Вадим
 
-### Подготовка к выполнению.
+## Подготовка к выполнению
 
-1. Необязательно. Изучите, что такое ClickHouse и Vector.
-2. Создайте свой публичный репозиторий на GitHub с произвольным именем или используйте старый.
-3. Скачайте Playbook из репозитория с домашним заданием и перенесите его в свой репозиторий.
-4. Подготовьте хосты в соответствии с группами из предподготовленного playbook.
+1. Подготовьте в Yandex Cloud три хоста: для `clickhouse`, для `vector` и для `lighthouse`.
 
-## Основная часть.
+Ссылка на репозиторий LightHouse: https://github.com/VKCOM/lighthouse
 
-1. Подготовьте свой inventory-файл prod.yml.
-```
----
-clickhouse:
-  hosts:
-    clickhouse-01:
-      ansible_connection: docker
-vector:
-  hosts:
-    vector-01:
-      ansible_connection: docker
-```
-2. Допишите playbook: нужно сделать ещё один play, который устанавливает и настраивает vector.
+## Основная часть
+
+1. Допишите playbook: нужно сделать ещё один play, который устанавливает и настраивает lighthouse.
+2. При создании tasks рекомендую использовать модули: `get_url`, `template`, `yum`, `apt`.
+3. Tasks должны: скачать статику lighthouse, установить nginx или любой другой webserver, настроить его конфиг для открытия lighthouse, запустить webserver.
+4. Приготовьте свой собственный inventory файл `prod.yml`.
 ```
 ---
 - name: Install Clickhouse
@@ -42,7 +32,7 @@ vector:
             mode: "0644"
           with_items: "{{ clickhouse_packages }}"
       rescue:
-        - name: Get clickhouse distrib (rescue)
+        - name: Get clickhouse distrib
           ansible.builtin.get_url:
             url: "https://packages.clickhouse.com/rpm/stable/clickhouse-common-static-{{ clickhouse_version }}.x86_64.rpm"
             dest: "./clickhouse-common-static-{{ clickhouse_version }}.rpm"
@@ -55,8 +45,11 @@ vector:
           - clickhouse-client-{{ clickhouse_version }}.rpm
           - clickhouse-server-{{ clickhouse_version }}.rpm
       notify: Start clickhouse service
-    - name: Flush handlers to restart clickhouse
-      ansible.builtin.meta: flush_handlers
+    - name: Start clickhouse service
+      become: true
+      ansible.builtin.service:
+        name: clickhouse-server
+        state: started
     - name: Create database
       ansible.builtin.command: "clickhouse-client -q 'create database logs;'"
       become: true
@@ -64,8 +57,8 @@ vector:
       failed_when: create_db.rc != 0 and create_db.rc != 82
       changed_when: create_db.rc == 0
 
-- name: Install vector
-  hosts: clickhouse
+- name: Install Vector
+  hosts: vector
   handlers:
     - name: Start vector service
       become: true
@@ -75,149 +68,343 @@ vector:
   tasks:
     - name: Get vector distrib
       ansible.builtin.get_url:
-        url: "https://packages.timber.io/vector/{{ vector_version }}/vector-{{ vector_version }}-1.x86_64.rpm"
-        dest: "./vector-{{ vector_version }}.rpm"
+        url: "https://packages.timber.io/vector/{{ vector_version }}/vector_{{ vector_version }}-1_amd64.deb"
+        dest: "./vector-{{ vector_version }}.dpkg"
         mode: "0644"
-      notify: Start vector service
     - name: Install vector packages
       become: true
-      ansible.builtin.yum:
-        name:
-          - vector-{{ vector_version }}.rpm
-    - name: Flush handlers to restart vector
-      ansible.builtin.meta: flush_handlers
+      ansible.builtin.apt:
+        deb: ./vector-{{ vector_version }}.dpkg
+      notify: start vector service
+
+- name: Install nginx
+  hosts: lighthouse
+  handlers:
+    - name: Restart Nginx Service
+      become: true
+      ansible.builtin.service:
+        name: nginx
+        state: restarted
+  tasks:
+    - name: Install nginx
+      become: true
+      ansible.builtin.apt:
+        name: nginx
+        state: present
+        update_cache: true
+      notify: restart nginx service
+
+- name: Install lighthouse
+  hosts: lighthouse
+  handlers:
+    - name: Restart nginx service
+      become: true
+      ansible.builtin.service:
+        name: nginx
+        state: restarted
+  pre_tasks:
+    - name: Install unzip
+      become: true
+      ansible.builtin.apt:
+        name: unzip
+        state: present
+        update_cache: true
+  tasks:
+    - name: Get lighthouse distrib
+      ansible.builtin.get_url:
+        url: "https://github.com/VKCOM/lighthouse/archive/refs/heads/master.zip"
+        dest: "./lighthouse.zip"
+        mode: "0644"
+    - name: Unarchive lighthouse distrib into nginx
+      become: true
+      ansible.builtin.unarchive:
+        src: ./lighthouse.zip
+        dest: /var/www/html/
+        remote_src: true
+      notify: Restart nginx service
+    - name: Make nginx config
+      become: true
+      ansible.builtin.template:
+        src: /home/kali/lesson/devops-netology/08-ansible-03-yandex/templates/default.j2
+        dest: /etc/nginx/sites-enabled/default
+        mode: "0644"
+      notify: Restart nginx service
+    - name: Remove lighthouse distrib
+      ansible.builtin.file:
+        path: "./lighthouse.zip"
+        state: absent
 ```
-3. При создании tasks рекомендую использовать модули: get_url, template, unarchive, file.
-4. Tasks должны: скачать дистрибутив нужной версии, выполнить распаковку в выбранную директорию, установить vector.
-5. Запустите ansible-lint site.yml и исправьте ошибки, если они есть.
+
+5. Запустите `ansible-lint site.yml` и исправьте ошибки, если они есть.
 ```
-Исправил ошибки
-┌──(root㉿kali)-[/home/…/lesson/8-2-playbook/devops-netology/08-ansible-02-playbook]
-└─# ansible-lint site.yml 
-WARNING  Overriding detected file kind 'yaml' with 'playbook' for given positional argument: site.yml
-┌──(root㉿kali)-[/home/…/lesson/8-2-playbook/devops-netology/08-ansible-02-playbook]
-└─#
+┌──(root㉿kali)-[/home/kali/lesson/devops-netology/08-ansible-03-yandex]
+└─# ansible-lint site.yml
+
+Passed with production profile: 0 failure(s), 0 warning(s) on 1 files.
 ```
-6. Попробуйте запустить playbook на этом окружении с флагом --check.
+6. Попробуйте запустить playbook на этом окружении с флагом `--check`.
 ```
-Playbook завершился ошибкой.
-┌──(root㉿kali)-[/home/…/lesson/8-2-playbook/devops-netology/08-ansible-02-playbook]
+┌──(root㉿kali)-[/home/kali/lesson/devops-netology/08-ansible-03-yandex]
 └─# ansible-playbook site.yml -i inventory/prod.yml --check
-PLAY [Install Vector] ***********************************************************************************************************************************************************************************************************************
-TASK [Gathering Facts] **********************************************************************************************************************************************************************************************************************
+
+PLAY [Install Clickhouse] *************************************************************************************************************************************************************************************
+
+TASK [Gathering Facts] ****************************************************************************************************************************************************************************************
+ok: [clickhouse-01]
+
+TASK [Get clickhouse distrib] *********************************************************************************************************************************************************************************
+ok: [clickhouse-01] => (item=clickhouse-client)
+ok: [clickhouse-01] => (item=clickhouse-server)
+failed: [clickhouse-01] (item=clickhouse-common-static) => {"ansible_loop_var": "item", "changed": false, "dest": "./clickhouse-common-static-22.3.3.44.rpm", "elapsed": 0, "gid": 1000, "group": "user", "item": "clickhouse-common-static", "mode": "0664", "msg": "Request failed", "owner": "user", "response": "HTTP Error 404: Not Found", "secontext": "unconfined_u:object_r:user_home_t:s0", "size": 246310036, "state": "file", "status_code": 404, "uid": 1000, "url": "https://packages.clickhouse.com/rpm/stable/clickhouse-common-static-22.3.3.44.noarch.rpm"}
+
+TASK [Get clickhouse distrib] *********************************************************************************************************************************************************************************
+ok: [clickhouse-01]
+
+TASK [Install clickhouse packages] ****************************************************************************************************************************************************************************
+ok: [clickhouse-01]
+
+TASK [Start clickhouse service] *******************************************************************************************************************************************************************************
+ok: [clickhouse-01]
+
+TASK [Create database] ****************************************************************************************************************************************************************************************
+skipping: [clickhouse-01]
+
+PLAY [Install Vector] *****************************************************************************************************************************************************************************************
+
+TASK [Gathering Facts] ****************************************************************************************************************************************************************************************
 ok: [vector-01]
-TASK [Get Vector distrib] *******************************************************************************************************************************************************************************************************************
+
+TASK [Get vector distrib] *************************************************************************************************************************************************************************************
 ok: [vector-01]
-TASK [Install Vector packages] **************************************************************************************************************************************************************************************************************
-fatal: [vector-01]: FAILED! => {"changed": false, "module_stderr": "/bin/sh: sudo: command not found\n", "module_stdout": "", "msg": "MODULE FAILURE\nSee stdout/stderr for the exact error", "rc": 127}
-PLAY RECAP **********************************************************************************************************************************************************************************************************************************
-vector-01                  : ok=2    changed=0    unreachable=0    failed=1    skipped=0    rescued=0    ignored=0
+
+TASK [Install vector packages] ********************************************************************************************************************************************************************************
+ok: [vector-01]
+
+PLAY [Install nginx] ******************************************************************************************************************************************************************************************
+
+TASK [Gathering Facts] ****************************************************************************************************************************************************************************************
+ok: [lighthouse-01]
+
+TASK [Install nginx] ******************************************************************************************************************************************************************************************
+ok: [lighthouse-01]
+
+PLAY [Install lighthouse] *************************************************************************************************************************************************************************************
+
+TASK [Gathering Facts] ****************************************************************************************************************************************************************************************
+ok: [lighthouse-01]
+
+TASK [Install unzip] ******************************************************************************************************************************************************************************************
+ok: [lighthouse-01]
+
+TASK [Get lighthouse distrib] *********************************************************************************************************************************************************************************
+changed: [lighthouse-01]
+
+TASK [Unarchive lighthouse distrib into nginx] ****************************************************************************************************************************************************************
+fatal: [lighthouse-01]: FAILED! => {"changed": false, "msg": "Source './lighthouse.zip' does not exist"}
+
+PLAY RECAP ****************************************************************************************************************************************************************************************************
+clickhouse-01              : ok=4    changed=0    unreachable=0    failed=0    skipped=1    rescued=1    ignored=0   
+lighthouse-01              : ok=5    changed=1    unreachable=0    failed=1    skipped=0    rescued=0    ignored=0   
+vector-01                  : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0  
 ```
-7. Запустите playbook на prod.yml окружении с флагом --diff. Убедитесь, что изменения на системе произведены.
+7. Запустите playbook на `prod.yml` окружении с флагом `--diff`. Убедитесь, что изменения на системе произведены.
 ```
-┌──(root㉿kali)-[/home/…/lesson/8-2-playbook/devops-netology/08-ansible-02-playbook]
+┌──(root㉿kali)-[/home/kali/lesson/devops-netology/08-ansible-03-yandex]
 └─# ansible-playbook site.yml -i inventory/prod.yml --diff
-PLAY [Install Clickhouse] *******************************************************************************************************************************************************************************************************************
-TASK [Gathering Facts] **********************************************************************************************************************************************************************************************************************
+
+PLAY [Install Clickhouse] *************************************************************************************************************************************************************************************
+
+TASK [Gathering Facts] ****************************************************************************************************************************************************************************************
 ok: [clickhouse-01]
-TASK [Get clickhouse distrib] ***************************************************************************************************************************************************************************************************************
+
+TASK [Get clickhouse distrib] *********************************************************************************************************************************************************************************
 ok: [clickhouse-01] => (item=clickhouse-client)
 ok: [clickhouse-01] => (item=clickhouse-server)
-failed: [clickhouse-01] (item=clickhouse-common-static) => {"ansible_loop_var": "item", "changed": false, "dest": "./clickhouse-common-static-22.3.3.44.rpm", "elapsed": 0, "gid": 0, "group": "root", "item": "clickhouse-common-static", "mode": "0644", "msg": "Request failed", "owner": "root", "response": "HTTP Error 404: Not Found", "size": 246310036, "state": "file", "status_code": 404, "uid": 0, "url": "https://packages.clickhouse.com/rpm/stable/clickhouse-common-static-22.3.3.44.noarch.rpm"}
-TASK [Get clickhouse distrib] ***************************************************************************************************************************************************************************************************************
+failed: [clickhouse-01] (item=clickhouse-common-static) => {"ansible_loop_var": "item", "changed": false, "dest": "./clickhouse-common-static-22.3.3.44.rpm", "elapsed": 0, "gid": 1000, "group": "user", "item": "clickhouse-common-static", "mode": "0664", "msg": "Request failed", "owner": "user", "response": "HTTP Error 404: Not Found", "secontext": "unconfined_u:object_r:user_home_t:s0", "size": 246310036, "state": "file", "status_code": 404, "uid": 1000, "url": "https://packages.clickhouse.com/rpm/stable/clickhouse-common-static-22.3.3.44.noarch.rpm"}
+
+TASK [Get clickhouse distrib] *********************************************************************************************************************************************************************************
 ok: [clickhouse-01]
-TASK [Install clickhouse packages] **********************************************************************************************************************************************************************************************************
+
+TASK [Install clickhouse packages] ****************************************************************************************************************************************************************************
 ok: [clickhouse-01]
-TASK [Create database] **********************************************************************************************************************************************************************************************************************
+
+TASK [Start clickhouse service] *******************************************************************************************************************************************************************************
 ok: [clickhouse-01]
-PLAY [Install vector] ***********************************************************************************************************************************************************************************************************************
-TASK [Gathering Facts] **********************************************************************************************************************************************************************************************************************
+
+TASK [Create database] ****************************************************************************************************************************************************************************************
+ok: [clickhouse-01]
+
+PLAY [Install Vector] *****************************************************************************************************************************************************************************************
+
+TASK [Gathering Facts] ****************************************************************************************************************************************************************************************
 ok: [vector-01]
-TASK [Get vector distrib] *******************************************************************************************************************************************************************************************************************
+
+TASK [Get vector distrib] *************************************************************************************************************************************************************************************
 ok: [vector-01]
-TASK [Install vector packages] **************************************************************************************************************************************************************************************************************
+
+TASK [Install vector packages] ********************************************************************************************************************************************************************************
 ok: [vector-01]
-PLAY RECAP **********************************************************************************************************************************************************************************************************************************
-clickhouse-01              : ok=4    changed=0    unreachable=0    failed=0    skipped=0    rescued=1    ignored=0
-vector-01                  : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+
+PLAY [Install nginx] ******************************************************************************************************************************************************************************************
+
+TASK [Gathering Facts] ****************************************************************************************************************************************************************************************
+ok: [lighthouse-01]
+
+TASK [Install nginx] ******************************************************************************************************************************************************************************************
+ok: [lighthouse-01]
+
+PLAY [Install lighthouse] *************************************************************************************************************************************************************************************
+
+TASK [Gathering Facts] ****************************************************************************************************************************************************************************************
+ok: [lighthouse-01]
+
+TASK [Install unzip] ******************************************************************************************************************************************************************************************
+ok: [lighthouse-01]
+
+TASK [Get lighthouse distrib] *********************************************************************************************************************************************************************************
+ok: [lighthouse-01]
+
+TASK [Unarchive lighthouse distrib into nginx] ****************************************************************************************************************************************************************
+.d...p...?? lighthouse-master/
+.d...p...?? lighthouse-master/css/
+.d...p...?? lighthouse-master/img/
+.d...p...?? lighthouse-master/js/
+.d...p...?? lighthouse-master/js/ace-min/
+.d...p...?? lighthouse-master/js/ace-min/snippets/
+changed: [lighthouse-01]
+
+TASK [Make nginx config] **************************************************************************************************************************************************************************************
+ok: [lighthouse-01]
+
+TASK [Remove lighthouse distrib] ******************************************************************************************************************************************************************************
+--- before
++++ after
+@@ -1,4 +1,4 @@
+ {
+     "path": "./lighthouse.zip",
+-    "state": "file"
++    "state": "absent"
+ }
+
+changed: [lighthouse-01]
+
+RUNNING HANDLER [Restart nginx service] ***********************************************************************************************************************************************************************
+changed: [lighthouse-01]
+
+PLAY RECAP ****************************************************************************************************************************************************************************************************
+clickhouse-01              : ok=5    changed=0    unreachable=0    failed=0    skipped=0    rescued=1    ignored=0   
+lighthouse-01              : ok=9    changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+vector-01                  : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0 
+
 ```
-Изменения в Докере.
 ```
-┌──(root㉿kali)-[/home/…/lesson/8-2-playbook/devops-netology/08-ansible-02-playbook]
-└─# docker exec -it f34fbd826971 /bin/bash
-[root@f34fbd826971 /]# cat /etc/vector/vector.toml
-#                                    __   __  __
-#                                    \ \ / / / /
-#                                     \ V / / /
-#                                      \_/  \/
-#
-#                                    V E C T O R
-#                                   Configuration
-#
-# ------------------------------------------------------------------------------
-# Website: https://vector.dev
-# Docs: https://vector.dev/docs
-# Chat: https://chat.vector.dev
-# ------------------------------------------------------------------------------
-# Change this to use a non-default directory for Vector data storage:
-# data_dir = "/var/lib/vector"
-# Random Syslog-formatted logs
-[sources.dummy_logs]
-type = "demo_logs"
-format = "syslog"
-interval = 1
-# Parse Syslog logs
-# See the Vector Remap Language reference for more info: https://vrl.dev
-[transforms.parse_logs]
-type = "remap"
-inputs = ["dummy_logs"]
-source = '''
-. = parse_syslog!(string!(.message))
-'''
-# Print parsed logs to stdout
-[sinks.print]
-type = "console"
-inputs = ["parse_logs"]
-encoding.codec = "json"
-# Vector's GraphQL API (disabled by default)
-# Uncomment to try it out with the `vector top` command or
-# in your browser at http://localhost:8686
-#[api]
-#enabled = true
-#address = "127.0.0.1:8686"
+┌──(root㉿kali)-[~/.ssh]
+└─# ssh user@158.160.11.169
+
+user@lighthouse-01:~$ cat /etc/nginx/sites-enabled/default
+server {
+        listen 80 default_server;
+        listen [::]:80 default_server;
+        root /var/www/html/lighthouse-master;
+        index index.html index.htm index.nginx-debian.html;
+        server_name _;
+        location / {
+                try_files $uri $uri/ =404;
+        }
+}
 ```
-8. Повторно запустите playbook с флагом --diff и убедитесь, что playbook идемпотентен.
+
+8. Повторно запустите playbook с флагом `--diff` и убедитесь, что playbook идемпотентен.
+
 ```
-┌──(root㉿kali)-[/home/…/lesson/8-2-playbook/devops-netology/08-ansible-02-playbook]
-└─# ansible-playbook -i inventory/prod.yml site.yml --diff
-PLAY [Install Clickhouse] ******************************************************************************************************************************************************
-TASK [Gathering Facts] *********************************************************************************************************************************************************
+┌──(root㉿kali)-[/home/kali/lesson/devops-netology/08-ansible-03-yandex]
+└─# ansible-playbook site.yml -i inventory/prod.yml --diff
+
+PLAY [Install Clickhouse] *************************************************************************************************************************************************************************************
+
+TASK [Gathering Facts] ****************************************************************************************************************************************************************************************
 ok: [clickhouse-01]
-TASK [Get clickhouse distrib] **************************************************************************************************************************************************
+
+TASK [Get clickhouse distrib] *********************************************************************************************************************************************************************************
 ok: [clickhouse-01] => (item=clickhouse-client)
 ok: [clickhouse-01] => (item=clickhouse-server)
-failed: [clickhouse-01] (item=clickhouse-common-static) => {"ansible_loop_var": "item", "changed": false, "dest": "./clickhouse-common-static-22.3.3.44.rpm", "elapsed": 0, "gid": 0, "group": "root", "item": "clickhouse-common-static", "mode": "0644", "msg": "Request failed", "owner": "root", "response": "HTTP Error 404: Not Found", "size": 246310036, "state": "file", "status_code": 404, "uid": 0, "url": "https://packages.clickhouse.com/rpm/stable/clickhouse-common-static-22.3.3.44.noarch.rpm"}
-TASK [Get clickhouse distrib] **************************************************************************************************************************************************
+failed: [clickhouse-01] (item=clickhouse-common-static) => {"ansible_loop_var": "item", "changed": false, "dest": "./clickhouse-common-static-22.3.3.44.rpm", "elapsed": 0, "gid": 1000, "group": "user", "item": "clickhouse-common-static", "mode": "0664", "msg": "Request failed", "owner": "user", "response": "HTTP Error 404: Not Found", "secontext": "unconfined_u:object_r:user_home_t:s0", "size": 246310036, "state": "file", "status_code": 404, "uid": 1000, "url": "https://packages.clickhouse.com/rpm/stable/clickhouse-common-static-22.3.3.44.noarch.rpm"}
+
+TASK [Get clickhouse distrib] *********************************************************************************************************************************************************************************
 ok: [clickhouse-01]
-TASK [Install clickhouse packages] *********************************************************************************************************************************************
+
+TASK [Install clickhouse packages] ****************************************************************************************************************************************************************************
 ok: [clickhouse-01]
-TASK [Create database] *********************************************************************************************************************************************************
+
+TASK [Start clickhouse service] *******************************************************************************************************************************************************************************
 ok: [clickhouse-01]
-PLAY [Install vector] **********************************************************************************************************************************************************
-TASK [Gathering Facts] *********************************************************************************************************************************************************
+
+TASK [Create database] ****************************************************************************************************************************************************************************************
+ok: [clickhouse-01]
+
+PLAY [Install Vector] *****************************************************************************************************************************************************************************************
+
+TASK [Gathering Facts] ****************************************************************************************************************************************************************************************
 ok: [vector-01]
-TASK [Get vector distrib] ******************************************************************************************************************************************************
+
+TASK [Get vector distrib] *************************************************************************************************************************************************************************************
 ok: [vector-01]
-TASK [Install vector packages] *************************************************************************************************************************************************
+
+TASK [Install vector packages] ********************************************************************************************************************************************************************************
 ok: [vector-01]
-PLAY RECAP *********************************************************************************************************************************************************************
-clickhouse-01              : ok=4    changed=0    unreachable=0    failed=0    skipped=0    rescued=1    ignored=0
-vector-01                  : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+
+PLAY [Install nginx] ******************************************************************************************************************************************************************************************
+
+TASK [Gathering Facts] ****************************************************************************************************************************************************************************************
+ok: [lighthouse-01]
+
+TASK [Install nginx] ******************************************************************************************************************************************************************************************
+ok: [lighthouse-01]
+
+PLAY [Install lighthouse] *************************************************************************************************************************************************************************************
+
+TASK [Gathering Facts] ****************************************************************************************************************************************************************************************
+ok: [lighthouse-01]
+
+TASK [Install unzip] ******************************************************************************************************************************************************************************************
+ok: [lighthouse-01]
+
+TASK [Get lighthouse distrib] *********************************************************************************************************************************************************************************
+ok: [lighthouse-01]
+
+TASK [Unarchive lighthouse distrib into nginx] ****************************************************************************************************************************************************************
+.d...p...?? lighthouse-master/
+.d...p...?? lighthouse-master/css/
+.d...p...?? lighthouse-master/img/
+.d...p...?? lighthouse-master/js/
+.d...p...?? lighthouse-master/js/ace-min/
+.d...p...?? lighthouse-master/js/ace-min/snippets/
+changed: [lighthouse-01]
+
+TASK [Make nginx config] **************************************************************************************************************************************************************************************
+ok: [lighthouse-01]
+
+TASK [Remove lighthouse distrib] ******************************************************************************************************************************************************************************
+--- before
++++ after
+@@ -1,4 +1,4 @@
+ {
+     "path": "./lighthouse.zip",
+-    "state": "file"
++    "state": "absent"
+ }
+
+changed: [lighthouse-01]
+
+RUNNING HANDLER [Restart nginx service] ***********************************************************************************************************************************************************************
+changed: [lighthouse-01]
+
+PLAY RECAP ****************************************************************************************************************************************************************************************************
+clickhouse-01              : ok=5    changed=0    unreachable=0    failed=0    skipped=0    rescued=1    ignored=0   
+lighthouse-01              : ok=9    changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+vector-01                  : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0 
 ```
-9. Подготовьте README.md-файл по своему playbook. В нём должно быть описано: что делает playbook, какие у него есть параметры и теги.
+9. Подготовьте README.md файл по своему playbook. В нём должно быть описано: что делает playbook, какие у него есть параметры и теги.
 
-https://github.com/V4d1M63/devops-netology/blob/08-ansible-02-playbook/README.md
 
-10. Готовый playbook выложите в свой репозиторий, поставьте тег 08-ansible-02-playbook на фиксирующий коммит, в ответ предоставьте ссылку на него.
-
-https://github.com/V4d1M63/devops-netology/tree/08-ansible-02-playbook
+Ссылка на readme файл [https://github.com/V4d1M63/devops-netology/blob/08-ansible-03-yandex/README.md]
